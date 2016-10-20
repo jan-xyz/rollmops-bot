@@ -1,8 +1,39 @@
 #!/usr/bin/env python
 
+from autobahn.twisted.websocket import WebSocketClientProtocol
+from autobahn.twisted.websocket import WebSocketClientFactory
+from autobahn.twisted.websocket import connectWS
+
+from twisted.python import log
+from twisted.internet import reactor
+import sys
+import os
+
+
+class MyClientProtocol(WebSocketClientProtocol):
+
+    def onOpen(self):
+        print "ws connected"
+        # self.sendMessage(u"Hello, world!".encode('utf8'))
+
+    def onMessage(self, payload, isBinary):
+        print("Text message received: {0}".format(payload.decode('utf8')))
+
 
 def main():
-    print "hello world"
+    apikey = os.environ['ROLLMOPS_SLACK_API_KEY']
+    requestURL = "http://slack.com/api/rtm.start?token=%s" % apikey
+
+    wssURL = "wss://mpmulti-5gmu.slack-msgs.com/websocket/"
+
+    log.startLogging(sys.stdout)
+    print requestURL
+
+    factory = WebSocketClientFactory(wssURL)
+    factory.protocol = MyClientProtocol
+
+    connectWS(factory)
+    reactor.run()
 
 if __name__ == '__main__':
     main()
