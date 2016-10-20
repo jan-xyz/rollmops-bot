@@ -8,12 +8,14 @@ from twisted.python import log
 from twisted.internet import reactor
 import sys
 import os
+import requests
+import json
 
 
 class MyClientProtocol(WebSocketClientProtocol):
 
     def onOpen(self):
-        print "ws connected"
+        pass
         # self.sendMessage(u"Hello, world!".encode('utf8'))
 
     def onMessage(self, payload, isBinary):
@@ -24,7 +26,15 @@ def main():
     apikey = os.environ['ROLLMOPS_SLACK_API_KEY']
     requestURL = "http://slack.com/api/rtm.start?token=%s" % apikey
 
-    wssURL = "wss://mpmulti-5gmu.slack-msgs.com/websocket/"
+    res = requests.get(requestURL)
+    try:
+        json_reqsponse = json.loads(res.text)
+    except:
+        print
+        print "received broken json from %s" % requestURL
+        sys.exit(1)
+
+    wssURL = json_reqsponse["url"]
 
     log.startLogging(sys.stdout)
     print requestURL
