@@ -6,6 +6,7 @@ from autobahn.twisted.websocket import connectWS
 
 from twisted.python import log
 from twisted.internet import reactor
+from twisted.internet.protocol import ReconnectingClientFactory
 import sys
 import os
 import requests
@@ -20,6 +21,10 @@ class MyClientProtocol(WebSocketClientProtocol):
 
     def onMessage(self, payload, isBinary):
         print("Text message received: {0}".format(payload.decode('utf8')))
+        res_string = payload.decode('utf8')
+        res_json = json.loads(res_string)
+        if 'reconnect_url' in res_json['type']:
+            wssURL = res_json['url']
 
     def sendMessageToChannel(self, text, channel):
         self.message_id = self.message_id + 1
@@ -34,6 +39,10 @@ class MyClientProtocol(WebSocketClientProtocol):
         }
         self.sendMessage(json.dumps(message))
 
+
+class ourWS_reconnecting(ReconnectingClientFactory, WebSocketClientFactory):
+    def __init__(self, *args, **kwargs):
+        WebSocketClientFactory.__init__(self, *args, **kwargs)
 
 def main():
     apikey = os.environ['ROLLMOPS_SLACK_API_KEY']
@@ -52,7 +61,7 @@ def main():
     log.startLogging(sys.stdout)
     print requestURL
 
-    factory = WebSocketClientFactory(wssURL)
+    factory = ourWS_reconnecting(wssURL)
     factory.protocol = MyClientProtocol
 
     connectWS(factory)
