@@ -16,18 +16,16 @@ import json
 class MyClientProtocol(WebSocketClientProtocol):
 
     def onOpen(self):
+        self.messages = {}
         self.message_id = 0
         self.sendMessageToChannel("hello Jan", "G2S151RCP")
 
     def onMessage(self, payload, isBinary):
-        print("Text message received: {0}".format(payload.decode('utf8')))
         res_string = payload.decode('utf8')
         res_json = json.loads(res_string)
-        if 'reconnect_url' in res_json['type']:
-            wssURL = res_json['url']
+        self.parseJsonPayload(res_json)
 
     def sendMessageToChannel(self, text, channel):
-        self.message_id = self.message_id + 1
         message_type = "message"
         message_channel = channel
         message_text = text
@@ -37,12 +35,29 @@ class MyClientProtocol(WebSocketClientProtocol):
             "channel": message_channel,
             "text": message_text
         }
+
+        self.messages[self.message_id] = message
         self.sendMessage(json.dumps(message))
+        self.message_id = self.message_id + 1
+
+    def parseJsonPayload(self, jsonPayload):
+        if 'type' in jsonPayload:
+            if jsonPayload['type'] == 'reconnect_url':
+                print jsonPayload['url']
+            elif jsonPayload['type'] == 'presence_change':
+                print '%s is now %s' % (jsonPayload['user'],
+                                        jsonPayload['presence'])
+        elif 'ok' in jsonPayload:
+            print "srv ack: '%s'" % self.messages[jsonPayload['reply_to']]
+        else:
+            print jsonPayload
 
 
 class ourWS_reconnecting(ReconnectingClientFactory, WebSocketClientFactory):
+
     def __init__(self, *args, **kwargs):
         WebSocketClientFactory.__init__(self, *args, **kwargs)
+
 
 def main():
     apikey = os.environ['ROLLMOPS_SLACK_API_KEY']
@@ -59,7 +74,6 @@ def main():
     wssURL = json_reqsponse["url"]
 
     log.startLogging(sys.stdout)
-    print requestURL
 
     factory = ourWS_reconnecting(wssURL)
     factory.protocol = MyClientProtocol
