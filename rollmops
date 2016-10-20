@@ -15,11 +15,24 @@ import json
 class MyClientProtocol(WebSocketClientProtocol):
 
     def onOpen(self):
-        pass
-        # self.sendMessage(u"Hello, world!".encode('utf8'))
+        self.message_id = 0
+        self.sendMessageToChannel("hello Jan", "G2S151RCP")
 
     def onMessage(self, payload, isBinary):
         print("Text message received: {0}".format(payload.decode('utf8')))
+
+    def sendMessageToChannel(self, text, channel):
+        self.message_id = self.message_id + 1
+        message_type = "message"
+        message_channel = channel
+        message_text = text
+        message = {
+            "id": self.message_id,
+            "type": message_type,
+            "channel": message_channel,
+            "text": message_text
+        }
+        self.sendMessage(json.dumps(message))
 
 
 def main():
