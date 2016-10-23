@@ -15,9 +15,11 @@ import json
 
 class MyClientProtocol(WebSocketClientProtocol):
 
+    def __init__(self):
+        self.message_id = 0
+
     def onOpen(self):
         self.messages = {}
-        self.message_id = 0
         self.sendMessageToChannel("hello Jan", "G2S151RCP")
 
     def onMessage(self, payload, isBinary):
