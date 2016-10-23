@@ -15,12 +15,9 @@ import json
 
 class MyClientProtocol(WebSocketClientProtocol):
 
-    def __init__(self):
-        self.message_id = 0
-
     def onOpen(self):
         self.messages = {}
-        self.sendMessageToChannel("hello Jan", "G2S151RCP")
+        self.message_id = 1
 
     def onMessage(self, payload, isBinary):
         res_string = payload.decode('utf8')
@@ -49,6 +46,8 @@ class MyClientProtocol(WebSocketClientProtocol):
             elif jsonPayload['type'] == 'presence_change':
                 print '%s is now %s' % (jsonPayload['user'],
                                         jsonPayload['presence'])
+            else:
+                print jsonPayload
         elif 'ok' in jsonPayload:
             print "srv ack: '%s'" % self.messages[jsonPayload['reply_to']]
         else:
