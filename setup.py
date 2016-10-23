@@ -18,5 +18,5 @@ setup(
     author_email="jan.steinke@gmail.com, jonas.pruditsch@online.de",
     description="a mops that rolls your slack experience!",
     zip_safe=False,
-    tests_require=['pytest>=2.9.2', 'pytest-timeout>=1.0.0'],
+    tests_require=['pytest>=2.9.2'],
 )
