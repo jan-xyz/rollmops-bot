@@ -38,10 +38,12 @@ def test_type_user_presence(protocol):
     protocol.factory.users = [
         {
           "id": user_id,
+          "name": "test1",
           "presence": "active"
         },
         {
           "id": "U29HVJZ3P",
+          "name": "test2",
           "presence": "active"
         }
     ]
