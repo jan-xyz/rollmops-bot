@@ -15,9 +15,20 @@ import json
 
 class MyClientProtocol(WebSocketClientProtocol):
 
-    def onOpen(self):
+    def __init__(self):
+        WebSocketClientProtocol.__init__(self)
         self.messages = {}
+        self.users = {}
+        self.channels = {}
+        self.ims = {}
         self.message_id = 1
+        self.reconnect_url = ""
+        self.factory = None
+
+    def onOpen(self):
+        self.messages.clear()
+        self.message_id = 1
+        print self.factory.url
 
     def onMessage(self, payload, isBinary):
         res_string = payload.decode('utf8')
@@ -42,10 +53,10 @@ class MyClientProtocol(WebSocketClientProtocol):
     def parseJsonPayload(self, jsonPayload):
         if 'type' in jsonPayload:
             if jsonPayload['type'] == 'reconnect_url':
-                print jsonPayload['url']
+                self.update_factory_url(jsonPayload['url'])
             elif jsonPayload['type'] == 'presence_change':
-                print '%s is now %s' % (jsonPayload['user'],
-                                        jsonPayload['presence'])
+                self.update_user_presence(jsonPayload['user'],
+                                          jsonPayload['presence'])
             else:
                 print jsonPayload
         elif 'ok' in jsonPayload:
@@ -53,30 +64,48 @@ class MyClientProtocol(WebSocketClientProtocol):
         else:
             print jsonPayload
 
+    def update_factory_url(self, url):
+        self.factory.url = url
+
+    def update_user_presence(self, user_id, presence):
+        for user in self.factory.users:
+            if user["id"] == user_id:
+                user["presence"] = presence
+                print "%s is now %s" % (user["name"], user["presence"])
+
 
 class ourWS_reconnecting(ReconnectingClientFactory, WebSocketClientFactory):
 
-    def __init__(self, *args, **kwargs):
-        WebSocketClientFactory.__init__(self, *args, **kwargs)
+    def __init__(self, requestURL):
+        if requestURL == "":
+            wssURL = ""
+        else:
+            res = requests.get(requestURL)
+            try:
+                json_reqsponse = json.loads(res.text)
+            except:
+                print
+                print "received broken json from %s" % requestURL
+                sys.exit(1)
+
+            wssURL = json_reqsponse["url"]
+            self.users = json_reqsponse["users"]
+
+        WebSocketClientFactory.__init__(self, wssURL)
+
+    def buildProtocol(self, addr):
+        p = self.protocol()
+        p.factory = self
+        return p
 
 
 def main():
     apikey = os.environ['ROLLMOPS_SLACK_API_KEY']
     requestURL = "http://slack.com/api/rtm.start?token=%s" % apikey
 
-    res = requests.get(requestURL)
-    try:
-        json_reqsponse = json.loads(res.text)
-    except:
-        print
-        print "received broken json from %s" % requestURL
-        sys.exit(1)
-
-    wssURL = json_reqsponse["url"]
-
     log.startLogging(sys.stdout)
 
-    factory = ourWS_reconnecting(wssURL)
+    factory = ourWS_reconnecting(requestURL)
     factory.protocol = MyClientProtocol
 
     connectWS(factory)
