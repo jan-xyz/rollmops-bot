@@ -80,7 +80,7 @@ class MyClientProtocol(WebSocketClientProtocol):
             user_name = message['user']
             for user in self.factory.users:
                 if user['id'] == message['user']:
-                    user_name = user['name']
+                    user_name = user['profile']['first_name']
             text = "Hello %s, how can I help you?" % user_name
             channel = message["channel"]
             self.sendMessageToChannel(text, channel)
