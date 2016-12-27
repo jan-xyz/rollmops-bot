@@ -28,7 +28,6 @@ class MyClientProtocol(WebSocketClientProtocol):
     def onOpen(self):
         self.messages.clear()
         self.message_id = 1
-        print self.factory.url
 
     def onMessage(self, payload, isBinary):
         res_string = payload.decode('utf8')
@@ -57,6 +56,8 @@ class MyClientProtocol(WebSocketClientProtocol):
             elif jsonPayload['type'] == 'presence_change':
                 self.update_user_presence(jsonPayload['user'],
                                           jsonPayload['presence'])
+            elif jsonPayload['type'] == 'message':
+                self.parse_message(jsonPayload)
             else:
                 print jsonPayload
         elif 'ok' in jsonPayload:
@@ -72,6 +73,17 @@ class MyClientProtocol(WebSocketClientProtocol):
             if user["id"] == user_id:
                 user["presence"] = presence
                 print "%s is now %s" % (user["name"], user["presence"])
+
+    def parse_message(self, message):
+        print message
+        if "rollmops" in message["text"]:
+            user_name = message['user']
+            for user in self.factory.users:
+                if user['id'] == message['user']:
+                    user_name = user['profile']['first_name']
+            text = "Hello %s, how can I help you?" % user_name
+            channel = message["channel"]
+            self.sendMessageToChannel(text, channel)
 
 
 class ourWS_reconnecting(ReconnectingClientFactory, WebSocketClientFactory):
