@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import pytest
+import mock
 from twisted.test import proto_helpers
 
 
@@ -10,11 +11,13 @@ def protocol():
 
     wssURL = ''
 
-    factory = ourWS_reconnecting(wssURL)
+    main_window = mock.Mock()
+    factory = ourWS_reconnecting(wssURL, main_window)
     factory.protocol = MyClientProtocol
     proto = factory.buildProtocol(('127.0.0.1', 0))
     tr = proto_helpers.StringTransport()
     proto.makeConnection(tr)
+    proto.messages_window = mock.Mock()
 
     return proto
 

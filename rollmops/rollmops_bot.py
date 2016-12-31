@@ -11,28 +11,83 @@ import sys
 import os
 import requests
 import json
+import curses
 
 
 class MyClientProtocol(WebSocketClientProtocol):
 
-    def __init__(self):
+    def __init__(self, stdscr):
         WebSocketClientProtocol.__init__(self)
         self.messages = {}
-        self.users = {}
         self.channels = {}
         self.ims = {}
         self.message_id = 1
+        self.received_message_id = 1
         self.reconnect_url = ""
         self.factory = None
+
+        self.stdscr = stdscr
+        self.user_window = None
+        self.header_window = None
+        self.messages_window = None
 
     def onOpen(self):
         self.messages.clear()
         self.message_id = 1
+        self.received_message_id = 1
+        self.stdscr.refresh()
+        self.user_window = self.display_users(self.factory.users,
+                                              self.user_window)
+        self.header_window = self.display_header(self.header_window)
+        self.messages_window = self.display_messages(self.messages_window)
 
     def onMessage(self, payload, isBinary):
         res_string = payload.decode('utf8')
         res_json = json.loads(res_string)
         self.parseJsonPayload(res_json)
+        self.display_messages(self.messages_window, res_json)
+        self.received_message_id += 1
+
+    def display_header(self, window):
+        if window is None:
+            window = curses.newwin(5, 40, 0, 0)
+        window.addstr(2, 10, "rollmops bot v.0.1")
+        window.border(0)
+        window.refresh()
+
+        return window
+
+    def display_users(self, users, window):
+        if window is None:
+            begin_x = 0
+            begin_y = 5
+            height = len(users)
+            width = 40
+            window = curses.newwin(height, width, begin_y, begin_x)
+        cursor = 0
+        for user in users:
+            user_name = user['name'].encode('utf-8')
+            if user['presence'] == 'active':
+                color = curses.A_STANDOUT
+            else:
+                color = curses.A_DIM
+            window.addstr(cursor, 1, user_name, color)
+            cursor += 1
+        window.border(0)
+        window.refresh()
+
+        return window
+
+    def display_messages(self, window, message=None):
+        if window is None:
+            window = curses.newwin(40, 120, 0, 40)
+        if message is not None:
+            window.addstr(self.received_message_id, 1,
+                          json.dumps(message).encode('utf-8'))
+        window.border(0)
+        window.refresh()
+
+        return window
 
     def sendMessageToChannel(self, text, channel):
         message_type = "message"
@@ -58,12 +113,6 @@ class MyClientProtocol(WebSocketClientProtocol):
                                           jsonPayload['presence'])
             elif jsonPayload['type'] == 'message':
                 self.parse_message(jsonPayload)
-            else:
-                print jsonPayload
-        elif 'ok' in jsonPayload:
-            print "srv ack: '%s'" % self.messages[jsonPayload['reply_to']]
-        else:
-            print jsonPayload
 
     def update_factory_url(self, url):
         self.factory.url = url
@@ -72,10 +121,9 @@ class MyClientProtocol(WebSocketClientProtocol):
         for user in self.factory.users:
             if user["id"] == user_id:
                 user["presence"] = presence
-                print "%s is now %s" % (user["name"], user["presence"])
+        self.display_users(self.factory.users, self.user_window)
 
     def parse_message(self, message):
-        print message
         if "rollmops" in message["text"]:
             user_name = message['user']
             for user in self.factory.users:
@@ -88,7 +136,8 @@ class MyClientProtocol(WebSocketClientProtocol):
 
 class ourWS_reconnecting(ReconnectingClientFactory, WebSocketClientFactory):
 
-    def __init__(self, requestURL):
+    def __init__(self, requestURL, stdscr):
+        self.stdscr = stdscr
         if requestURL == "":
             wssURL = ""
         else:
@@ -96,8 +145,6 @@ class ourWS_reconnecting(ReconnectingClientFactory, WebSocketClientFactory):
             try:
                 json_reqsponse = json.loads(res.text)
             except:
-                print
-                print "received broken json from %s" % requestURL
                 sys.exit(1)
 
             wssURL = json_reqsponse["url"]
@@ -106,22 +153,22 @@ class ourWS_reconnecting(ReconnectingClientFactory, WebSocketClientFactory):
         WebSocketClientFactory.__init__(self, wssURL)
 
     def buildProtocol(self, addr):
-        p = self.protocol()
+        p = self.protocol(self.stdscr)
         p.factory = self
         return p
 
 
-def main():
+def main(stdscr):
     apikey = os.environ['ROLLMOPS_SLACK_API_KEY']
     requestURL = "http://slack.com/api/rtm.start?token=%s" % apikey
 
     log.startLogging(sys.stdout)
 
-    factory = ourWS_reconnecting(requestURL)
+    factory = ourWS_reconnecting(requestURL, stdscr)
     factory.protocol = MyClientProtocol
 
     connectWS(factory)
     reactor.run()
 
 if __name__ == '__main__':
-    main()
+    curses.wrapper(main)

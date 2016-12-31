@@ -18,7 +18,18 @@ def protocol():
     tr = proto_helpers.StringTransport()
     proto.makeConnection(tr)
 
-    proto.factory.users = [
+    return proto
+
+
+def test_that_it_calls_border_and_refresh(protocol):
+    """
+    WHEN:
+        display_users is called
+    THEN:
+        the window border is set to 0
+    """
+    window = mock.Mock()
+    users = [
         {
             "name": "bobby",
             "presence": "active"
@@ -28,27 +39,6 @@ def protocol():
             "presence": "inactive"
         }
     ]
-    proto.user_window = mock.Mock()
-    proto.header_window = mock.Mock()
-    proto.messages_window = mock.Mock()
-
-    return proto
-
-
-def test_message_index_reset(protocol):
-    """
-    WHEN:
-        a new connection is opened
-    THEN:
-        the messages array and message_id are reset
-    """
-    protocol.message_id = 3
-    protocol.messages = {
-        "1": "test",
-        "2": "test"
-    }
-    assert len(protocol.messages) == 2
-    assert protocol.message_id == 3
-    protocol.onOpen()
-    assert len(protocol.messages) == 0
-    assert protocol.message_id == 1
+    protocol.display_users(users, window)
+    window.border.assert_called_with(0)
+    window.refresh.assert_called_with()
