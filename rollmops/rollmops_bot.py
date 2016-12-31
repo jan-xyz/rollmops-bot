@@ -6,14 +6,16 @@ import curses
 import os
 
 import slack_protocol
+import slack_curses_ui
 
 
-def main(stdscr):
+def main(mainScreen):
     apikey = os.environ['ROLLMOPS_SLACK_API_KEY']
     requestURL = "http://slack.com/api/rtm.start?token=%s" % apikey
 
+    slackUi = slack_curses_ui.slackCursesUi(mainScreen)
 
-    protocolFactory = slack_protocol.slackFactory(requestURL, stdscr)
+    protocolFactory = slack_protocol.slackFactory(requestURL)
     protocolFactory.protocol = slack_protocol.slackProtocol
 
     connectWS(protocolFactory)
