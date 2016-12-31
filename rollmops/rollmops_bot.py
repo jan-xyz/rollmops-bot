@@ -16,10 +16,10 @@ def main(stdscr):
 
     log.startLogging(sys.stdout)
 
-    factory = slack_protocol.slackFactory(requestURL, stdscr)
-    factory.protocol = slack_protocol.slackProtocol
+    protocolFactory = slack_protocol.slackFactory(requestURL, stdscr)
+    protocolFactory.protocol = slack_protocol.slackProtocol
 
-    connectWS(factory)
+    connectWS(protocolFactory)
     reactor.run()
 
 if __name__ == '__main__':
