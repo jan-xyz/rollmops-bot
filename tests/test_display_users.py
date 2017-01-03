@@ -7,13 +7,18 @@ from twisted.test import proto_helpers
 
 @pytest.fixture(scope="module")
 def protocol():
-    from rollmops.rollmops_bot import MyClientProtocol, ourWS_reconnecting
+    from rollmops.slack_protocol import slackProtocol, slackFactory
+    from rollmops.slack_curses_ui import slackCursesUi
 
     wssURL = ''
 
-    main_window = mock.Mock()
-    factory = ourWS_reconnecting(wssURL, main_window)
-    factory.protocol = MyClientProtocol
+    mainScreen = mock.Mock()
+    header_window = mock.Mock()
+    user_window = mock.Mock()
+    messages_window = mock.Mock()
+    ui = slackCursesUi(mainScreen, header_window, user_window, messages_window)
+    factory = slackFactory(wssURL, ui)
+    factory.protocol = slackProtocol
     proto = factory.buildProtocol(('127.0.0.1', 0))
     tr = proto_helpers.StringTransport()
     proto.makeConnection(tr)
@@ -39,6 +44,6 @@ def test_that_it_calls_border_and_refresh(protocol):
             "presence": "inactive"
         }
     ]
-    protocol.display_users(users, window)
+    protocol.ui.display_users(window, users)
     window.border.assert_called_with(0)
     window.refresh.assert_called_with()
