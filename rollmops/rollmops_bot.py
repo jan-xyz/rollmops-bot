@@ -13,9 +13,9 @@ def main(mainScreen):
     apikey = os.environ['ROLLMOPS_SLACK_API_KEY']
     requestURL = "http://slack.com/api/rtm.start?token=%s" % apikey
 
-    slackUi = slack_curses_ui.slackCursesUi(mainScreen)
+    ui = slack_curses_ui.slackCursesUi(mainScreen)
 
-    protocolFactory = slack_protocol.slackFactory(requestURL)
+    protocolFactory = slack_protocol.slackFactory(requestURL, ui)
     protocolFactory.protocol = slack_protocol.slackProtocol
 
     connectWS(protocolFactory)

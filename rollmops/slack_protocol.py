@@ -10,7 +10,7 @@ import requests
 
 
 class slackProtocol(WebSocketClientProtocol):
-    def __init__(self):
+    def __init__(self, ui):
         WebSocketClientProtocol.__init__(self)
         self.messages = {}
         self.channels = {}
@@ -18,6 +18,7 @@ class slackProtocol(WebSocketClientProtocol):
         self.message_id = 1
         self.reconnect_url = ""
         self.factory = None
+        self.ui = ui
 
     def onOpen(self):
         self.messages.clear()
@@ -61,6 +62,7 @@ class slackProtocol(WebSocketClientProtocol):
         for user in self.factory.users:
             if user["id"] == user_id:
                 user["presence"] = presence
+        self.ui.display_users(self.ui.user_window, self.factory.users)
 
     def parse_message(self, message):
         if "rollmops" in message["text"]:
@@ -75,7 +77,7 @@ class slackProtocol(WebSocketClientProtocol):
 
 class slackFactory(ReconnectingClientFactory, WebSocketClientFactory):
 
-    def __init__(self, requestURL):
+    def __init__(self, requestURL, ui):
         if requestURL == "":
             wssURL = ""
         else:
@@ -88,9 +90,10 @@ class slackFactory(ReconnectingClientFactory, WebSocketClientFactory):
             wssURL = json_reqsponse["url"]
             self.users = json_reqsponse["users"]
 
+        self.ui = ui
         WebSocketClientFactory.__init__(self, wssURL)
 
     def buildProtocol(self, addr):
-        p = self.protocol()
+        p = self.protocol(self.ui)
         p.factory = self
         return p

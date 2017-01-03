@@ -18,17 +18,27 @@ class slackCursesUi(object):
             y = 0
             x = 0
             window = curses.newwin(height, width, y, x)
+        window.addstr(2, 1, "rollmops v.0.1")
         window.border(0)
         window.refresh()
         return window
 
-    def display_users(self, window=None):
+    def display_users(self, window=None, users=[]):
         if window is None:
             height = self.get_maxy(self.mainScreen) - 5
             width = 40
             y = 5
             x = 0
             window = curses.newwin(height, width, y, x)
+        cursor = 0
+        for user in users:
+            user_name = user['name'].encode('utf-8')
+            if user['presence'] == 'active':
+                color = curses.A_STANDOUT
+            else:
+                color = curses.A_DIM
+            window.addstr(cursor, 1, user_name, color)
+            cursor += 1
         window.border(0)
         window.refresh()
         return window
