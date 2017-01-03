@@ -34,7 +34,7 @@ class slackCursesUi(object):
             y = 5
             x = 0
             window = curses.newwin(height, width, y, x)
-        cursor = 0
+        cursor = 1
         for user in users:
             user_name = user['name'].encode('utf-8')
             if user['presence'] == 'active':
