@@ -2,6 +2,8 @@
 
 from twisted.internet import reactor
 from autobahn.twisted.websocket import connectWS
+from twisted.python import log
+
 import curses
 import os
 
@@ -10,6 +12,9 @@ import slack_curses_ui
 
 
 def main(mainScreen):
+    logfile = open('log', 'w')
+    log.startLogging(logfile)
+
     apikey = os.environ['ROLLMOPS_SLACK_API_KEY']
     requestURL = "http://slack.com/api/rtm.start?token=%s" % apikey
 
