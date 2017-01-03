@@ -5,11 +5,15 @@ import curses
 
 class slackCursesUi(object):
 
-    def __init__(self, mainScreen):
+    def __init__(self, mainScreen, header_window=None, user_window=None,
+                 messages_window=None):
         self.mainScreen = mainScreen
-        self.header_window = self.display_header()
-        self.user_window = self.display_users()
-        self.messages_window = self.display_messages()
+        self.header_window = header_window
+        self.header_window = self.display_header(self.header_window)
+        self.user_window = user_window
+        self.user_window = self.display_users(self.user_window)
+        self.messages_window = messages_window
+        self.messages_window = self.display_messages(self.messages_window)
 
     def display_header(self, window=None):
         if window is None:
