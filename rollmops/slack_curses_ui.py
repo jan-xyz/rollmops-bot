@@ -47,13 +47,18 @@ class slackCursesUi(object):
         window.refresh()
         return window
 
-    def display_messages(self, window=None):
+    def display_messages(self, window=None, messages=[]):
         if window is None:
             height = self.get_maxy(self.mainScreen)
             width = self.get_maxx(self.mainScreen) - 40
             y = 0
             x = 40
             window = curses.newwin(height, width, y, x)
+        cursor = 1
+        max_y, max_x = window.getmaxyx()
+        for message in messages:
+            window.addstr(cursor, 1, message['user']+":"+message['text'])
+            cursor += 1
         window.border(0)
         window.refresh()
         return window

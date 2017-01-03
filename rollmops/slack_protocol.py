@@ -20,10 +20,13 @@ class slackProtocol(WebSocketClientProtocol):
         self.factory = None
         self.ui = ui
 
+        self.incoming_messages = []
+
     def onOpen(self):
         self.messages.clear()
         self.message_id = 1
         self.received_message_id = 1
+        self.incoming_messages = []
 
     def onMessage(self, payload, isBinary):
         res_string = payload.decode('utf8')
@@ -65,6 +68,8 @@ class slackProtocol(WebSocketClientProtocol):
         self.ui.display_users(self.ui.user_window, self.factory.users)
 
     def parse_message(self, message):
+        self.incoming_messages.append(message)
+        self.ui.display_messages(self.ui.messages_window, self.incoming_messages)
         if "rollmops" in message["text"]:
             user_name = message['user']
             for user in self.factory.users:
