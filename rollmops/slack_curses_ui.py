@@ -36,7 +36,7 @@ class slackCursesUi(object):
         # print all users onto the window
         cursor = 1
         for user in users:
-            user_name = user['name'].encode('utf-8')
+            user_name = user['name'].encode('utf8')
             if user['presence'] == 'active':
                 color = curses.A_STANDOUT
             else:
@@ -58,7 +58,8 @@ class slackCursesUi(object):
         cursor = 1
         # print all messages onto the window
         for message in messages:
-            window.addstr(cursor, 1, message['user']+":"+message['text'])
+            text = message['user']+":"+message['text']
+            window.addstr(cursor, 1, text.encode('utf8'))
             cursor += 1
         window.border(0)
         window.refresh(0, 0, 0, 40, self.get_maxy(self.mainScreen)-1,
