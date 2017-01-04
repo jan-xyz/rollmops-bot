@@ -8,18 +8,25 @@ from twisted.test import proto_helpers
 
 @pytest.fixture(scope="module")
 def protocol():
-    from rollmops.rollmops_bot import MyClientProtocol, ourWS_reconnecting
+    from rollmops.slack_protocol import slackProtocol, slackFactory
+    from rollmops.slack_curses_ui import slackCursesUi
 
     wssURL = ''
 
-    main_window = mock.Mock()
-    factory = ourWS_reconnecting(wssURL, main_window)
-    factory.protocol = MyClientProtocol
+    mainScreen = mock.Mock()
+    header_window = mock.Mock()
+    user_window = mock.Mock()
+    messages_window = mock.Mock()
+    user_window.getmaxyx.return_value = 10, 10
+    messages_window.getmaxyx.return_value = 10, 10
+    mainScreen.getmaxyx.return_value = 10, 10
+
+    ui = slackCursesUi(mainScreen, header_window, user_window, messages_window)
+    factory = slackFactory(wssURL, ui)
+    factory.protocol = slackProtocol
     proto = factory.buildProtocol(('127.0.0.1', 0))
     tr = proto_helpers.StringTransport()
     proto.makeConnection(tr)
-    proto.user_window = mock.Mock()
-    proto.messages_window = mock.Mock()
 
     return proto
 

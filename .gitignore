@@ -93,3 +93,4 @@ ENV/
 ########
 # run.sh contains secure data
 run*.sh
+log
