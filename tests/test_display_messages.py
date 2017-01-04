@@ -37,7 +37,6 @@ def test_that_it_calls_border_and_refresh(protocol):
     THEN:
         the window border is set to 0
     """
-    window = mock.Mock()
-    protocol.ui.display_messages(window)
-    window.border.assert_called_with(0)
-    window.refresh.assert_called_with()
+    protocol.ui.display_messages(protocol.ui.messages_window)
+    protocol.ui.messages_window.border.assert_called_with(0)
+    protocol.ui.messages_window.refresh.assert_called_with(0, 0, 0, 40, 9, 10)
