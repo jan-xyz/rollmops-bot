@@ -27,20 +27,6 @@ def protocol():
     tr = proto_helpers.StringTransport()
     proto.makeConnection(tr)
 
-    proto.factory.users = [
-        {
-            "name": "bobby",
-            "presence": "active"
-        },
-        {
-            "name": "jim",
-            "presence": "inactive"
-        }
-    ]
-    proto.user_window = mock.Mock()
-    proto.header_window = mock.Mock()
-    proto.messages_window = mock.Mock()
-
     return proto
 
 
