@@ -17,6 +17,10 @@ def protocol():
     header_window = mock.Mock()
     user_window = mock.Mock()
     messages_window = mock.Mock()
+    user_window.getmaxyx.return_value = 10, 10
+    messages_window.getmaxyx.return_value = 10, 10
+    mainScreen.getmaxyx.return_value = 10, 10
+
     ui = slackCursesUi(mainScreen, header_window, user_window, messages_window)
     factory = slackFactory(wssURL, ui)
     factory.protocol = slackProtocol
