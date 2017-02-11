@@ -1,39 +1,89 @@
-#!/usr/bin/env python
+#! /usr/bin/env python
 
-from autobahn.twisted.websocket import WebSocketClientProtocol
-from autobahn.twisted.websocket import WebSocketClientFactory
-from twisted.internet.protocol import ReconnectingClientFactory
+from tornado.ioloop import IOLoop
+from tornado import gen, httpclient
+from tornado.websocket import websocket_connect
 
 import json
-import sys
-import requests
 
 
-class slackProtocol(WebSocketClientProtocol):
-    def __init__(self, ui):
-        WebSocketClientProtocol.__init__(self)
-        self.messages = {}
-        self.channels = {}
-        self.ims = {}
-        self.message_id = 1
-        self.reconnect_url = ""
-        self.factory = None
-        self.ui = ui
+class slackProtocol(object):
 
-        self.incoming_messages = []
+    def __init__(self, requestURL, datahandler):
+        self.datahandler = datahandler
+        loginResponse = self.requestSlackLogin(requestURL)
+        if loginResponse is not None:
+            self.initialize_datahandler(datahandler, loginResponse)
+        self.ioloop = IOLoop.instance()
+        self.ws = None
+        self.message_id = 0
 
-    def onOpen(self):
-        self.messages.clear()
-        self.message_id = 1
-        self.received_message_id = 1
-        self.incoming_messages = []
+    def requestSlackLogin(self, url):
+        http_client = httpclient.HTTPClient()
+        json_response = None
+        try:
+            response = http_client.fetch(url)
+            json_response = json.loads(response.body)
+        except httpclient.HTTPError as e:
+            # HTTPError is raised for non-200 responses; the response
+            # can be found in e.response.
+            print("Error: " + str(e))
+        except Exception as e:
+            # Other errors are possible, such as IOError.
+            print("Error: " + str(e))
+        http_client.close()
+        return json_response
 
-    def onMessage(self, payload, isBinary):
-        res_string = payload.decode('utf8')
-        res_json = json.loads(res_string)
-        self.parseJsonPayload(res_json)
+    def initialize_datahandler(self, datahandler, response):
+        datahandler.set_wss_url(response['url'])
+        datahandler.append_users(response['users'])
+        datahandler.append_channels(response['channels'])
 
-    def sendMessageToChannel(self, text, channel):
+    @gen.coroutine
+    def connect(self):
+        try:
+            self.ws = yield websocket_connect(self.datahandler.get_wss_url())
+        except Exception, e:
+            print "connection error %s" % e
+        else:
+            self.run()
+
+    @gen.coroutine
+    def run(self):
+        while True:
+            msg = yield self.ws.read_message()
+            if msg is None:
+                print "connection closed"
+                self.ws = None
+                break
+            self.parse_json_payload(json.loads(msg))
+
+    def parse_json_payload(self, jsonPayload):
+        if 'type' in jsonPayload:
+            if jsonPayload['type'] == 'reconnect_url':
+                self.update_reconnect_url(jsonPayload['url'])
+            elif jsonPayload['type'] == 'presence_change':
+                self.update_user_presence(jsonPayload['user'],
+                                          jsonPayload['presence'])
+            elif jsonPayload['type'] == 'message':
+                self.parse_message(jsonPayload)
+
+    def update_reconnect_url(self, url):
+        self.datahandler.set_wss_url(url)
+
+    def update_user_presence(self, user_id, presence):
+        self.datahandler.update_user_presence(user_id, presence)
+
+    def parse_message(self, message):
+        self.datahandler.append_message(message)
+        if "rollmops" in message["text"]:
+            text = "Hello %s, how can I help you?" % (
+                self.datahandler.get_username(message['user'])
+            )
+            channel = message["channel"]
+            self.send_message_to_channel(text, channel)
+
+    def send_message_to_channel(self, text, channel):
         message_type = "message"
         message_channel = channel
         message_text = text
@@ -44,61 +94,5 @@ class slackProtocol(WebSocketClientProtocol):
             "text": message_text
         }
 
-        self.messages[self.message_id] = message
-        self.sendMessage(json.dumps(message))
+        self.ws.write_message(json.dumps(message))
         self.message_id = self.message_id + 1
-
-    def parseJsonPayload(self, jsonPayload):
-        if 'type' in jsonPayload:
-            if jsonPayload['type'] == 'reconnect_url':
-                self.update_factory_url(jsonPayload['url'])
-            elif jsonPayload['type'] == 'presence_change':
-                self.update_user_presence(jsonPayload['user'],
-                                          jsonPayload['presence'])
-            elif jsonPayload['type'] == 'message':
-                self.parse_message(jsonPayload)
-
-    def update_factory_url(self, url):
-        self.factory.url = url
-
-    def update_user_presence(self, user_id, presence):
-        for user in self.factory.users:
-            if user["id"] == user_id:
-                user["presence"] = presence
-        self.ui.display_users(self.ui.user_window, self.factory.users)
-
-    def parse_message(self, message):
-        self.incoming_messages.append(message)
-        self.ui.display_messages(self.ui.messages_window, self.incoming_messages)
-        if "rollmops" in message["text"]:
-            user_name = message['user']
-            for user in self.factory.users:
-                if user['id'] == message['user']:
-                    user_name = user['profile']['first_name']
-            text = "Hello %s, how can I help you?" % user_name
-            channel = message["channel"]
-            self.sendMessageToChannel(text, channel)
-
-
-class slackFactory(ReconnectingClientFactory, WebSocketClientFactory):
-
-    def __init__(self, requestURL, ui):
-        if requestURL == "":
-            wssURL = ""
-        else:
-            res = requests.get(requestURL)
-            try:
-                json_reqsponse = json.loads(res.text)
-            except:
-                sys.exit(1)
-
-            wssURL = json_reqsponse["url"]
-            self.users = json_reqsponse["users"]
-
-        self.ui = ui
-        WebSocketClientFactory.__init__(self, wssURL)
-
-    def buildProtocol(self, addr):
-        p = self.protocol(self.ui)
-        p.factory = self
-        return p

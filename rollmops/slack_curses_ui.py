@@ -5,12 +5,16 @@ import curses
 
 class slackCursesUi(object):
 
-    def __init__(self, mainScreen, header_window=None, user_window=None,
-                 messages_window=None):
+    def __init__(self, mainScreen, datahandler, header_window=None,
+                 user_window=None, messages_window=None):
         self.mainScreen = mainScreen
+        self.datahandler = datahandler
         self.header_window = self.display_header(header_window)
         self.user_window = self.display_users(user_window)
         self.messages_window = self.display_messages(messages_window)
+
+        self.datahandler.add_user_listener(self)
+        self.datahandler.add_message_listener(self)
 
     def display_header(self, window=None):
         if window is None:
@@ -24,6 +28,12 @@ class slackCursesUi(object):
         window.refresh()
         return window
 
+    def on_user_change(self, users):
+        self.display_users(self.user_window, users)
+
+    def on_message_change(self, messages):
+        self.display_messages(self.messages_window, messages)
+
     def display_users(self, window=None, users=[]):
         if window is None:
             height = self.get_maxy(self.mainScreen) - 5
@@ -31,8 +41,8 @@ class slackCursesUi(object):
             window = curses.newpad(height, width)
         max_y, max_x = window.getmaxyx()
         # resize window to fit all lines
-        if len(users)+2 >= max_y:
-            window.resize(len(users)+2, max_x)
+        if len(users) + 2 >= max_y:
+            window.resize(len(users) + 2, max_x)
         # print all users onto the window
         cursor = 1
         for user in users:
@@ -43,7 +53,7 @@ class slackCursesUi(object):
                 color = curses.A_DIM
             window.addstr(cursor, 1, user_name, color)
             cursor += 1
-        window.refresh(0, 0, 5, 0, self.get_maxy(self.mainScreen)-1, 40)
+        window.refresh(0, 0, 5, 0, self.get_maxy(self.mainScreen) - 1, 40)
         return window
 
     def display_messages(self, window=None, messages=[]):
@@ -53,16 +63,17 @@ class slackCursesUi(object):
             window = curses.newpad(height, width)
         max_y, max_x = window.getmaxyx()
         # resize window to fit all lines
-        if len(messages)+2 >= max_y:
-            window.resize(len(messages)+2, max_x)
+        if len(messages) + 2 >= max_y:
+            window.resize(len(messages) + 2, max_x)
         cursor = 1
         # print all messages onto the window
         for message in messages:
-            text = message['user']+":"+message['text']
+            user = self.datahandler.get_username(message['user'])
+            text = user + ":" + message['text']
             window.addstr(cursor, 1, text.encode('utf8'))
             cursor += 1
         window.border(0)
-        window.refresh(0, 0, 0, 40, self.get_maxy(self.mainScreen)-1,
+        window.refresh(0, 0, 0, 40, self.get_maxy(self.mainScreen) - 1,
                        self.get_maxx(self.mainScreen))
         return window
 
