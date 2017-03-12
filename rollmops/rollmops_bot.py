@@ -34,13 +34,10 @@ class Rollmops(object):
 
 def main(mainScreen=None):
     bot = Rollmops()
-    apikey = os.environ['ROLLMOPS_SLACK_API_KEY']
-    requestURL = "http://slack.com/api/rtm.start?token=%s" % apikey
-
     datahandler = rollmops_data_handler.rollmopsDataHandler()
     if mainScreen is not None:
         ui = slack_curses_ui.slackCursesUi(mainScreen, datahandler)
-    protocol = slack_protocol.slackProtocol(requestURL, datahandler)
+    protocol = slack_protocol.slackProtocol(datahandler)
     protocol.connect()
     protocol.ioloop.start()
     bot.set_datahandler(datahandler)

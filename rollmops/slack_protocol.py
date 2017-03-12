@@ -5,14 +5,17 @@ from tornado import gen, httpclient
 from tornado.websocket import websocket_connect
 
 import json
+import os
 
 
 class slackProtocol(object):
 
-    def __init__(self, requestURL, datahandler):
+    def __init__(self, datahandler):
+        apikey = os.environ['ROLLMOPS_SLACK_API_KEY']
+        requestURL = "http://slack.com/api/rtm.start?token=%s" % apikey
         self.datahandler = datahandler
         loginResponse = self.requestSlackLogin(requestURL)
-        if loginResponse is not None:
+        if loginResponse["ok"] is True:
             self.initialize_datahandler(datahandler, loginResponse)
         self.ioloop = IOLoop.instance()
         self.ws = None

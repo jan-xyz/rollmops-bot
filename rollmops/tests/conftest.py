@@ -14,11 +14,12 @@ def bot():
 @pytest.fixture(scope="function")
 def protocol():
     from rollmops.slack_protocol import slackProtocol
+    import os
 
-    requestURL = ''
+    os.environ['ROLLMOPS_SLACK_API_KEY'] = ''
     datahandler = mock.Mock()
 
-    return slackProtocol(requestURL, datahandler)
+    return slackProtocol(datahandler)
 
 
 @pytest.fixture(scope="function")
