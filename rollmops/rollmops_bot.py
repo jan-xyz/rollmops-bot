@@ -9,19 +9,43 @@ import rollmops_data_handler
 class Rollmops(object):
 
     def __init__(self):
-        pass
+        self.datahandler = None
+        self.ui = None
+        self.protocol = None
+
+    def set_datahandler(self, datahandler):
+        self.datahandler = datahandler
+
+    def get_datahandler(self):
+        return self.datahandler
+
+    def set_ui(self, ui):
+        self.ui = ui
+
+    def get_ui(self):
+        return self.ui
+
+    def set_protocol(self, protocol):
+        self.protocol = protocol
+
+    def get_protocol(self):
+        return self.protocol
 
 
 def main(mainScreen=None):
+    bot = Rollmops()
     apikey = os.environ['ROLLMOPS_SLACK_API_KEY']
     requestURL = "http://slack.com/api/rtm.start?token=%s" % apikey
 
     datahandler = rollmops_data_handler.rollmopsDataHandler()
     if mainScreen is not None:
-        slack_curses_ui.slackCursesUi(mainScreen, datahandler)
+        ui = slack_curses_ui.slackCursesUi(mainScreen, datahandler)
     protocol = slack_protocol.slackProtocol(requestURL, datahandler)
     protocol.connect()
     protocol.ioloop.start()
+    bot.set_datahandler(datahandler)
+    bot.set_ui(ui)
+    bot.set_protocol(protocol)
 
 
 if __name__ == '__main__':

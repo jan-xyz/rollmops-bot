@@ -5,6 +5,13 @@ import mock
 
 
 @pytest.fixture(scope="function")
+def bot():
+    from rollmops.rollmops_bot import Rollmops
+
+    return Rollmops()
+
+
+@pytest.fixture(scope="function")
 def protocol():
     from rollmops.slack_protocol import slackProtocol
 
