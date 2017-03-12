@@ -4,7 +4,7 @@ import pytest
 import mock
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def protocol():
     from rollmops.slack_protocol import slackProtocol
 
@@ -14,7 +14,7 @@ def protocol():
     return slackProtocol(requestURL, datahandler)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def ui():
     from rollmops.slack_curses_ui import slackCursesUi
 
@@ -31,14 +31,14 @@ def ui():
     return ui
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def datahandler():
     from rollmops.rollmops_data_handler import rollmopsDataHandler
 
     return rollmopsDataHandler()
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def active_users():
     users = [
         {
@@ -55,7 +55,7 @@ def active_users():
     return users
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def idle_users():
     users = [
         {
@@ -72,7 +72,7 @@ def idle_users():
     return users
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def channels():
     channels = [
         {
