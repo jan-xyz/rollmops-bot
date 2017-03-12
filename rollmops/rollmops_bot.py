@@ -6,6 +6,12 @@ import slack_curses_ui
 import rollmops_data_handler
 
 
+class Rollmops(object):
+
+    def __init__(self):
+        pass
+
+
 def main(mainScreen=None):
     apikey = os.environ['ROLLMOPS_SLACK_API_KEY']
     requestURL = "http://slack.com/api/rtm.start?token=%s" % apikey
